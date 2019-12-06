@@ -12,6 +12,7 @@ import sklearn
 from sklearn.model_selection import train_test_split 
 from sklearn import tree
 
+#=====前処理
 
 def get_btcprice(ticker, max):
     url = ('https://api.coingecko.com/api/v3/coins/')+ticker+('/market_chart?vs_currency=jpy&days=')+max
@@ -70,16 +71,17 @@ x.loc[df['mom'] >= 0, 'mom'] = 1
 x.loc[df['rsi'] < 50, 'rsi'] = -1 
 x.loc[df['rsi'] >= 50, 'rsi'] = 1 
 
-
 # 機械学習用に次元を変換する
 y2 = np.array(signal).reshape(-1,) 
 
 # xとyの要素数が同じか再確認 
-print(len(x), len(y2)) 
+print(len(x), len(y2))
 
 # データを9:1に分割する 
 (X_train, X_test,y_train, y_test) = train_test_split(x, y2, test_size=0.1, random_state=0, shuffle=False)
-print(X_train)
+
+
+#==========機械学習============#
 
 ライブラリの読み込み&クラス呼び出し&インスタンスの生成 
 clf = tree.DecisionTreeClassifier(max_depth=5)
@@ -92,5 +94,21 @@ predicted = clf.predict(X_test)
 
 # モデルのテストデータに対する精度を確認
 score = sum(predicted == y_test) / len(y_test)
-
 print('モデルの精度は{}%です'.format(score * 100))
+
+
+
+#======機械学習の結果に基づいてトレードした場合の収益を計算する========#
+
+# 予測データの長さを計算する
+length = len(predicted)
+
+# 機械学習の予測結果に従ってトレードした場合のリターンを計算する
+ai_return = (y[-length:] * predicted + 1).cumprod()
+
+# 同じ期間ホールドしていた場合のリターンを計算する
+hold_return = (y[-length:] + 1).cumprod() 
+
+# 各累積収益率をプロットする
+ai_return.plot(label='ai_trade', legend=True)
+hold_return.plot(label='hold', legend=True)
